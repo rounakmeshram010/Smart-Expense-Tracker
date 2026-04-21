@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Expense Tracker</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background:whitesmoke; }
+    .card { border-radius:20px; }
+    .income { color:green; }
+    .expense { color:red; }
+
+
+    
+  </style>
+</head>
+<body>
+
+<div class="container mt-4">
+  <h2 class="text-center mb-4">💰 Smart Expense Tracker</h2>
+
+  <div class="card p-4 mb-4">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <input type="text" id="desc" class="form-control" placeholder="Description">
+      </div>
+      <div class="col-md-2">
+        <input type="number" id="amount" class="form-control" placeholder="Amount">
+      </div>
+      <div class="col-md-2">
+        <input type="date" id="date" class="form-control">
+      </div>
+      <div class="col-md-2">
+        <select id="category" class="form-select">
+          <option>Food</option>
+          <option>Travel</option>
+          <option>Shopping</option>
+          <option>Other</option>
+          <option>Increment</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select id="type" class="form-select">
+          <option value="income">Income</option>
+          <option value="expense">Expense</option>
+        </select>
+      </div>
+      <div class="col-md-1">
+        <button onclick="addTransaction()" class="btn btn-primary w-100">Add</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card p-3 mb-4">
+    <div class="row g-2">
+      <div class="col-md-3">
+        <input type="text" id="search" class="form-control" placeholder="Search Transactions...">
+      </div>
+      <div class="col-md-2">
+        <input type="month" id="filterMonth" class="form-control" onchange="render()">
+      </div>
+      <div class="col-md-2">
+        <input type="date" id="filterDate" class="form-control" onchange="render()">
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-secondary w-50" onclick="clearFilters()">Clear</button>
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-primary w-100" onclick="render()">Search</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="card p-3 mb-3">
+    <h5>Balance: ₹<span id="balance">0</span></h5>
+    <p>Income: <span class="income" id="income">0</span></p>
+    <p>Expense: <span class="expense" id="expense">0</span></p>
+  </div>
+
+  <div class="card p-3">
+    <h5>Transactions</h5>
+    <ul id="list" class="list-group"></ul>
+  </div>
+</div>
+
+<script>
+let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+
+function addTransaction() {
+  let desc = document.getElementById('desc').value;
+  let amount = document.getElementById('amount').value;
+  let date = document.getElementById('date').value;
+  let category = document.getElementById('category').value;
+  let type = document.getElementById('type').value;
+  
+
+  if(desc === '' || amount === '' || date === '') return alert('Enter all fields');
+
+  let transaction = {
+    id: Date.now(),
+    desc,
+    amount: +amount,
+    category,
+    type,
+    date
+  };
+
+  transactions.push(transaction);
+  localStorage.setItem('transactions', JSON.stringify(transactions));
+
+  document.getElementById('desc').value = '';
+  document.getElementById('amount').value = '';
+  document.getElementById('date').value = '';
+
+  render();
+}
+
+function deleteTransaction(id) {
+  transactions = transactions.filter(t => t.id !== id);
+  localStorage.setItem('transactions', JSON.stringify(transactions));
+  render();
+}
+
+function clearFilters() {
+  document.getElementById('search').value = '';
+  document.getElementById('filterMonth').value = '';
+  document.getElementById('filterDate').value = '';
+  render();
+}
+
+function render() {
+  let list = document.getElementById('list');
+  list.innerHTML = '';
+
+  let search = document.getElementById('search').value.toLowerCase();
+  let filterMonth = document.getElementById('filterMonth').value;
+  let filterDate = document.getElementById('filterDate').value;
+
+  let income = 0, expense = 0;
+
+  let filtered = transactions.filter(t => {
+    let matchSearch = t.desc.toLowerCase().includes(search);
+    let matchMonth = filterMonth ? t.date.startsWith(filterMonth) : true;
+    let matchDate = filterDate ? t.date === filterDate : true;
+
+    return matchSearch && matchMonth && matchDate;
+  });
+
+  filtered.forEach(t => {
+    let li = document.createElement('li');
+    li.className = 'list-group-item d-flex justify-content-between align-items-center';
+
+    li.innerHTML = `
+      ${t.desc} (${t.category}) - ₹${t.amount} <small>(${t.date})</small>
+      <div>
+        <span class="${t.type}">${t.type}</span>
+        <button class="btn btn-sm btn-danger ms-2" onclick="deleteTransaction(${t.id})">X</button>
+      </div>
+    `;
+
+    list.appendChild(li);
+
+    if(t.type === 'income') income += t.amount;
+    else expense += t.amount;
+  });
+
+  document.getElementById('income').innerText = income;
+  document.getElementById('expense').innerText = expense;
+  document.getElementById('balance').innerText = income - expense;
+}
+
+render();
+</script>
+
+</body>
+</html>
